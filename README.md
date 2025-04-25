@@ -16,8 +16,8 @@ A new battlefield is emerging, defined by increased computing, distributed opera
 
 ## System Architecture
 
-![System Architecture]()
+![System Architecture](https://github.com/RedfordHudson/Motion-Capture-Engine/blob/f6ee9b8e101002a36c6017781dd9b2078f98e6be/resources/Motion%20Capture%20Circuit%20-%20System%20Architecture.png)
 
 ## Extension Targets
 
-![Extension Targets]()
+![Extension Targets](https://github.com/RedfordHudson/Motion-Capture-Engine/blob/f6ee9b8e101002a36c6017781dd9b2078f98e6be/resources/Motion%20Capture%20Circuit%20-%20Extensions.png)

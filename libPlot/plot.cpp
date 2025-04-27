@@ -23,10 +23,10 @@ namespace Plot {
     // Axis limits
     static float g_x_min = 0.0f;
     static float g_x_max = 10.0f;
-    static float g_accel_y_min = -2000.0f;
-    static float g_accel_y_max = 2000.0f;
-    static float g_gyro_y_min = -2000.0f;
-    static float g_gyro_y_max = 2000.0f;
+    static float g_accel_y_min = -32768.0f;
+    static float g_accel_y_max = 32767.0f;
+    static float g_gyro_y_min = -32768.0f;
+    static float g_gyro_y_max = 32767.0f;
     
     // Auto-fit data range
     static float g_accel_data_min = 0.0f;
@@ -203,13 +203,17 @@ namespace Plot {
         
         // Update Y axis limits based on auto-fit settings
         if (g_accel_auto_fit) {
-            float padding = (g_accel_data_max - g_accel_data_min) * 0.1f + 0.1f;
+            // Improved padding calculation for auto-fit to handle larger ranges
+            float range = g_accel_data_max - g_accel_data_min;
+            float padding = range * 0.1f + 1.0f;
             g_accel_y_min = g_accel_data_min - padding;
             g_accel_y_max = g_accel_data_max + padding;
         }
         
         if (g_gyro_auto_fit) {
-            float padding = (g_gyro_data_max - g_gyro_data_min) * 0.1f + 0.1f;
+            // Improved padding calculation for auto-fit to handle larger ranges
+            float range = g_gyro_data_max - g_gyro_data_min;
+            float padding = range * 0.1f + 1.0f;
             g_gyro_y_min = g_gyro_data_min - padding;
             g_gyro_y_max = g_gyro_data_max + padding;
         }
@@ -277,8 +281,8 @@ namespace Plot {
             if (ImGui::TreeNode("Accelerometer Y-Axis Settings")) {
                 ImGui::Checkbox("Auto-fit Y-Axis", &g_accel_auto_fit);
                 if (!g_accel_auto_fit) {
-                    ImGui::SliderFloat("Y Min", &g_accel_y_min, -10000.0f, 0.0f);
-                    ImGui::SliderFloat("Y Max", &g_accel_y_max, 0.0f, 10000.0f);
+                    ImGui::SliderFloat("Y Min", &g_accel_y_min, -32768.0f, 0.0f);
+                    ImGui::SliderFloat("Y Max", &g_accel_y_max, 0.0f, 32767.0f);
                 }
                 ImGui::TreePop();
             }
@@ -286,8 +290,8 @@ namespace Plot {
             if (ImGui::TreeNode("Gyroscope Y-Axis Settings")) {
                 ImGui::Checkbox("Auto-fit Y-Axis", &g_gyro_auto_fit);
                 if (!g_gyro_auto_fit) {
-                    ImGui::SliderFloat("Y Min", &g_gyro_y_min, -10000.0f, 0.0f);
-                    ImGui::SliderFloat("Y Max", &g_gyro_y_max, 0.0f, 10000.0f);
+                    ImGui::SliderFloat("Y Min", &g_gyro_y_min, -32768.0f, 0.0f);
+                    ImGui::SliderFloat("Y Max", &g_gyro_y_max, 0.0f, 32767.0f);
                 }
                 ImGui::TreePop();
             }

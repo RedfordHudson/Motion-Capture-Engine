@@ -71,8 +71,8 @@ void keyboardThread() {
 void sensorThread(HANDLE hSerial) {
     while (g_running) {
         try {
-            // Read one complete message
-            std::unordered_map<std::string, int> result = Serial::readAndProcess(hSerial);
+            // Read one complete message using the global function (not in Serial namespace)
+            std::unordered_map<std::string, int> result = ::readAndProcess(hSerial);
             
             // Print all six IMU values
             stringifyMap(result);
@@ -143,8 +143,8 @@ int main() {
         keyboard_thread.join();
     }
     
-    // Clean up
-    Serial::closeSerialHandle(hSerial);
+    // Clean up - CloseHandle is a Windows API function
+    ::CloseHandle(hSerial);
     Plot::shutdown();
     
     return 0;

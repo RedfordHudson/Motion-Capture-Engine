@@ -13,8 +13,9 @@ bool configurePort(HANDLE hSerial);
 bool configureTimeouts(HANDLE hSerial);
 std::unordered_map<std::string, int> parseJsonToDict(const std::string& completedMsg);
 void stringifyMap(std::unordered_map<std::string, int>& result);
-bool readAndProcess(HANDLE hSerial);
+std::unordered_map<std::string, int> readAndProcess(HANDLE hSerial);
 
 namespace Serial {
+    HANDLE getSerialHandle(const std::string& portName);
     int doStuff();
 }

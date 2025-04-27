@@ -94,19 +94,15 @@ std::unordered_map<std::string, int> parseJsonToDict(const std::string& complete
     return data;
 }
 
-void stringifyMap(std::unordered_map<std::string, int>& result) {
-    for (const auto& pair : result) {
-        std::cout << pair.first << ": " << pair.second << std::endl;
-    }
-}
-
-// Read data from the serial port into a string
-bool readAndProcess(HANDLE hSerial) {
+// Read one complete message from the serial port and return the parsed data
+std::unordered_map<std::string, int> readAndProcess(HANDLE hSerial) {
     const DWORD bufSize = 64;
     char buffer[bufSize];
     DWORD bytesRead;
     std::string msgBuffer;
+    std::unordered_map<std::string, int> result;
 
+    // Keep reading until we get a complete message
     while (true) {
         if (ReadFile(hSerial, buffer, bufSize, &bytesRead, nullptr) && bytesRead > 0) {
             msgBuffer.append(buffer, bytesRead);
@@ -115,48 +111,46 @@ bool readAndProcess(HANDLE hSerial) {
             size_t start = msgBuffer.find('{');
             size_t end = msgBuffer.find('}', start);
 
-            while (start != std::string::npos && end != std::string::npos) {
+            if (start != std::string::npos && end != std::string::npos) {
                 std::string completeMsg = msgBuffer.substr(start, end - start + 1);
-                std::unordered_map<std::string, int> result = parseJsonToDict(completeMsg);
-
-                // Print all six IMU values
-                std::cout << "ax: " << result["ax"] << ", ";
-                std::cout << "ay: " << result["ay"] << ", ";
-                std::cout << "az: " << result["az"] << ", ";
-                std::cout << "gx: " << result["gx"] << ", ";
-                std::cout << "gy: " << result["gy"] << ", ";
-                std::cout << "gz: " << result["gz"] << std::endl;
-
-                // Erase processed chunk
-                msgBuffer.erase(0, end + 1);
-                start = msgBuffer.find('{');
-                end = msgBuffer.find('}', start);
+                result = parseJsonToDict(completeMsg);
+                break; // Exit after getting one complete message
             }
         }
     }
 
-    return true;
+    return result;
 }
 
 namespace Serial {
-    int doStuff() {
-        std::string portName = "\\\\.\\COM3"; // Adjust as needed (e.g. COM4)
+    HANDLE getSerialHandle(const std::string& portName) {
         HANDLE hSerial = openSerialPort(portName);
 
-        if (hSerial == INVALID_HANDLE_VALUE) return 1;
+        if (hSerial == INVALID_HANDLE_VALUE) return INVALID_HANDLE_VALUE;
+        
         if (!configurePort(hSerial)) {
             std::cerr << "Failed to configure port." << std::endl;
-            return 1;
+            return INVALID_HANDLE_VALUE;
         }
 
         if (!configureTimeouts(hSerial)) {
             std::cerr << "Failed to set timeouts." << std::endl;
-            return 1;
+            return INVALID_HANDLE_VALUE;
         }
 
-        std::cout << "Listening on " << portName << "...\n";
-        readAndProcess(hSerial);
+        std::cout << "Connected to " << portName << "...\n";
+        return hSerial;
+    }
 
+    int doStuff() {
+        std::string portName = "\\\\.\\COM3"; // Adjust as needed (e.g. COM4)
+        HANDLE hSerial = getSerialHandle(portName);
+
+        if (hSerial == INVALID_HANDLE_VALUE) return 1;
+
+        // Get one reading
+        std::unordered_map<std::string, int> result = readAndProcess(hSerial);
+        
         CloseHandle(hSerial);
         return 0;
     }

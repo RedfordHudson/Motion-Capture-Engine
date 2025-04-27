@@ -26,6 +26,11 @@ void HandTracker::update(const std::unordered_map<std::string, int>& data) {
     m_gyro.y = static_cast<float>(data.at("gy"));
     m_gyro.z = static_cast<float>(data.at("gz"));
     
+    // Update velocity based on acceleration data
+    updateVelocity(prevAccel, currentTime);
+}
+
+void HandTracker::updateVelocity(const Vector3D& prevAccel, const std::chrono::steady_clock::time_point& currentTime) {
     // Calculate time delta in seconds
     if (!m_firstUpdate) {
         std::chrono::duration<float> deltaTime = currentTime - m_lastUpdateTime;

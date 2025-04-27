@@ -37,6 +37,9 @@ namespace Hand {
         Vector3D getVelocity() const;
         
     private:
+        // Update velocity based on acceleration data
+        void updateVelocity(const Vector3D& prevAccel, const std::chrono::steady_clock::time_point& currentTime);
+        
         // Raw sensor data
         Vector3D m_accel;
         Vector3D m_gyro;

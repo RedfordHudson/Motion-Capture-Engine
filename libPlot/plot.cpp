@@ -20,6 +20,15 @@ namespace Plot {
     // Plot settings
     static float g_plot_height = 200.0f;
     static float g_plot_width = -1.0f; // Full width
+    static float g_time_window = 5.0f; // Show 5 seconds of data
+    static bool g_auto_fit_y = true;  // Auto-fit only the Y axis
+    static float g_y_min = -2000.0f;  // Increased range for Y min
+    static float g_y_max = 2000.0f;   // Increased range for Y max
+    
+    // Auto detection of data range
+    static float g_data_min = -2000.0f;
+    static float g_data_max = 2000.0f;
+    static bool g_auto_detect_range = true;
     
     // Colors for each dimension
     static const ImVec4 g_colors[] = {
@@ -103,9 +112,30 @@ namespace Plot {
         
         // Add data points for acceleration
         g_sensorData.times.push_back(g_time);
-        g_sensorData.ax_data.push_back(static_cast<float>(data_point.at("ax")));
-        g_sensorData.ay_data.push_back(static_cast<float>(data_point.at("ay")));
-        g_sensorData.az_data.push_back(static_cast<float>(data_point.at("az")));
+        float ax = static_cast<float>(data_point.at("ax"));
+        float ay = static_cast<float>(data_point.at("ay"));
+        float az = static_cast<float>(data_point.at("az"));
+        
+        g_sensorData.ax_data.push_back(ax);
+        g_sensorData.ay_data.push_back(ay);
+        g_sensorData.az_data.push_back(az);
+        
+        // Auto-detect data range
+        if (g_auto_detect_range) {
+            // Update min/max values to ensure all data fits
+            g_data_min = std::min(g_data_min, std::min(ax, std::min(ay, az)));
+            g_data_max = std::max(g_data_max, std::max(ax, std::max(ay, az)));
+            
+            // Add 10% padding
+            float range = g_data_max - g_data_min;
+            float padding = range * 0.1f;
+            
+            // Update y-axis limits if using auto-fit
+            if (g_auto_fit_y) {
+                g_y_min = g_data_min - padding;
+                g_y_max = g_data_max + padding;
+            }
+        }
         
         // Limit history size
         if (g_sensorData.times.size() > MAX_POINTS) {
@@ -134,6 +164,31 @@ namespace Plot {
         
         // Plot controls
         ImGui::SliderFloat("Plot Height", &g_plot_height, 100.0f, 400.0f, "%.0f px");
+        ImGui::SliderFloat("Time Window (s)", &g_time_window, 1.0f, 20.0f, "%.1f s");
+        
+        // Y-axis controls
+        if (ImGui::Checkbox("Auto-fit Y-Axis", &g_auto_fit_y)) {
+            if (g_auto_fit_y) {
+                // Reset detection when switching to auto-fit
+                g_auto_detect_range = true;
+            }
+        }
+        
+        if (!g_auto_fit_y) {
+            // Wider range for manual Y-axis limits
+            ImGui::SliderFloat("Y Min", &g_y_min, -20000.0f, 0.0f);
+            ImGui::SliderFloat("Y Max", &g_y_max, 0.0f, 20000.0f);
+        } else {
+            // Display detected range
+            ImGui::Text("Detected Range: %.0f to %.0f", g_data_min, g_data_max);
+            
+            // Button to reset range detection
+            if (ImGui::Button("Reset Range Detection")) {
+                g_data_min = 0.0f;
+                g_data_max = 0.0f;
+                g_auto_detect_range = true;
+            }
+        }
         
         // Display current values
         if (!g_sensorData.times.empty()) {
@@ -146,9 +201,20 @@ namespace Plot {
         
         ImGui::Separator();
         
+        // Set x-axis limits for sliding window
+        float x_min = g_time - g_time_window;
+        float x_max = g_time;
+        
+        // Set the axis limits
+        ImPlotAxisFlags x_flags = 0; // No auto-fit for x-axis
+        ImPlotAxisFlags y_flags = 0; // We'll handle y-axis limits manually
+        
+        // Set fixed axis limits
+        ImPlot::SetNextAxesLimits(x_min, x_max, g_y_min, g_y_max, ImGuiCond_Always);
+        
         // Accelerometer data plot
         if (ImPlot::BeginPlot("Accelerometer Data", ImVec2(g_plot_width, g_plot_height))) {
-            ImPlot::SetupAxes("Time (s)", "Raw Acceleration", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+            ImPlot::SetupAxes("Time (s)", "Raw Acceleration", x_flags, y_flags);
             
             if (!g_sensorData.times.empty()) {
                 ImPlot::SetNextLineStyle(g_colors[0], 2.0f);

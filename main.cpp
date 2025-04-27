@@ -4,6 +4,7 @@
 #include <atomic>
 #include <conio.h> // For _kbhit() and _getch()
 #include <filesystem>
+#include <algorithm> // For std::min and std::max
 #include "libSerial/serial.h"
 #include "libPlot/plot.h"
 #include "libHand/hand.h"
@@ -192,6 +193,34 @@ void keyboardThread() {
                 g_uncoupler.setGyroCalibrationOffsets(0.0f, 0.0f, 0.0f);
                 std::cout << "Calibration reset to zero" << std::endl;
             }
+            // Increase gravity filter smoothing with 'S' key
+            else if (key == 's' || key == 'S') {
+                static float currentAlpha = 0.02f;  // Default alpha
+                currentAlpha = (std::max)(0.001f, currentAlpha * 0.8f);  // Reduce by 20%
+                g_uncoupler.setLowPassFilterAlpha(currentAlpha);
+                std::cout << "Increased gravity smoothing (alpha = " << currentAlpha << ")" << std::endl;
+            }
+            // Decrease gravity filter smoothing with 'F' key
+            else if (key == 'f' || key == 'F') {
+                static float currentAlpha = 0.02f;  // Default alpha
+                currentAlpha = (std::min)(0.5f, currentAlpha * 1.25f);  // Increase by 25%
+                g_uncoupler.setLowPassFilterAlpha(currentAlpha);
+                std::cout << "Decreased gravity smoothing (alpha = " << currentAlpha << ")" << std::endl;
+            }
+            // Increase gravity filter window size with '+' key
+            else if (key == 43 || key == 61) {  // 43 is '+', 61 is '='
+                static size_t currentWindowSize = 50;  // Default window size
+                currentWindowSize = (std::min)(static_cast<size_t>(500), currentWindowSize + 10);
+                g_uncoupler.setGravityFilterSize(currentWindowSize);
+                std::cout << "Increased gravity filter window size to " << currentWindowSize << " samples" << std::endl;
+            }
+            // Decrease gravity filter window size with '-' key
+            else if (key == 45 || key == 95) {  // 45 is '-', 95 is '_'
+                static size_t currentWindowSize = 50;  // Default window size
+                currentWindowSize = (std::max)(static_cast<size_t>(10), currentWindowSize - 10);
+                g_uncoupler.setGravityFilterSize(currentWindowSize);
+                std::cout << "Decreased gravity filter window size to " << currentWindowSize << " samples" << std::endl;
+            }
             
             // ESC key to exit
             if (key == 27) {
@@ -307,6 +336,10 @@ int main() {
     std::cout << "C: Start calibration" << std::endl;
     std::cout << "T: Toggle calibration on/off" << std::endl;
     std::cout << "R: Reset calibration" << std::endl;
+    std::cout << "S: Increase gravity smoothing" << std::endl;
+    std::cout << "F: Decrease gravity smoothing" << std::endl;
+    std::cout << "+: Increase gravity filter window size" << std::endl;
+    std::cout << "-: Decrease gravity filter window size" << std::endl;
     std::cout << "ESC: Exit" << std::endl;
     
     // Main rendering loop

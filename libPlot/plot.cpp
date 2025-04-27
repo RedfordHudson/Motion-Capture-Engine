@@ -17,6 +17,11 @@ namespace Plot {
     void drawPlots();
     void drawControls();
 
+    // Define consistent colors for X, Y, and Z axes
+    const ImVec4 X_AXIS_COLOR = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+    const ImVec4 Y_AXIS_COLOR = ImVec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
+    const ImVec4 Z_AXIS_COLOR = ImVec4(0.0f, 0.0f, 1.0f, 1.0f); // Blue
+
     // Global variables
     static GLFWwindow* g_window = nullptr;
     static SensorData g_sensor_data;
@@ -439,13 +444,13 @@ namespace Plot {
                 
                 std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
                 if (!g_sensor_data.times.empty()) {
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(X_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.ax_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Y_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.ay_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Z_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.az_data.data(), g_sensor_data.times.size());
                 }
                 ImPlot::EndPlot();
@@ -462,13 +467,13 @@ namespace Plot {
                 
                 std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
                 if (!g_sensor_data.times.empty()) {
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(X_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.gx_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.5f, 1.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Y_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.gy_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.5f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Z_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.gz_data.data(), g_sensor_data.times.size());
                 }
                 ImPlot::EndPlot();
@@ -485,13 +490,13 @@ namespace Plot {
                 
                 std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
                 if (!g_sensor_data.times.empty()) {
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(X_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.vx_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Y_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.vy_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.2f, 0.2f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Z_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.vz_data.data(), g_sensor_data.times.size());
                 }
                 ImPlot::EndPlot();
@@ -508,13 +513,13 @@ namespace Plot {
                 
                 std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
                 if (!g_sensor_data.times.empty()) {
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(X_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.gravity_x_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Y_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.gravity_y_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Z_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.gravity_z_data.data(), g_sensor_data.times.size());
                 }
                 ImPlot::EndPlot();
@@ -531,13 +536,13 @@ namespace Plot {
                 
                 std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
                 if (!g_sensor_data.times.empty()) {
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(X_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.linear_ax_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Y_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.linear_ay_data.data(), g_sensor_data.times.size());
                     
-                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::SetNextLineStyle(Z_AXIS_COLOR, 2.0f);
                     ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.linear_az_data.data(), g_sensor_data.times.size());
                 }
                 ImPlot::EndPlot();

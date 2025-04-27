@@ -21,31 +21,58 @@ Calibration::Calibrator g_calibrator;
 
 // Path to the calibration sound
 std::string g_calibrationSoundPath;
+bool g_audioInitialized = false;
 
 // Function to initialize audio
 bool initializeAudio() {
-    // Try to use system sounds first - will always succeed
-    g_calibrationSoundPath = "SystemDefault";
-    std::cout << "Using system sounds for audio feedback" << std::endl;
-    return true;
+    // Get the current executable path
+    std::filesystem::path exePath = std::filesystem::current_path();
+    
+    // Try different locations for the WAV file
+    std::vector<std::filesystem::path> possiblePaths = {
+        exePath / "assets" / "calibrating.wav",
+        exePath.parent_path() / "assets" / "calibrating.wav"
+    };
+    
+    for (const auto& path : possiblePaths) {
+        if (std::filesystem::exists(path)) {
+            g_calibrationSoundPath = path.string();
+            std::cout << "Found calibration WAV file at: " << g_calibrationSoundPath << std::endl;
+            
+            // Don't play the sound during initialization, just check if it exists
+            g_audioInitialized = true;
+            return true;
+        }
+    }
+    
+    std::cerr << "Could not find a usable calibration sound file. Falling back to system sounds." << std::endl;
+    g_audioInitialized = false;
+    return false;
 }
 
 // Function to play the calibration sound
 void playCalibrationSound() {
-    // Use Windows system sounds instead of files
-    // SND_ALIAS uses predefined system sounds
-    BOOL result = PlaySoundA("SystemExclamation", NULL, SND_ALIAS | SND_ASYNC);
-    
-    if (!result) {
-        // Fallback to simple beep if system sound failed
-        std::cerr << "Falling back to system beep" << std::endl;
-        Beep(750, 300); // 750 Hz for 300 ms
+    if (g_audioInitialized && !g_calibrationSoundPath.empty()) {
+        // Play the WAV file
+        if (!Audio::playSoundSimple(g_calibrationSoundPath, true)) {
+            // Fall back to system sounds if WAV file fails
+            std::cerr << "Failed to play WAV file, falling back to system sounds" << std::endl;
+            PlaySoundA("SystemExclamation", NULL, SND_ALIAS | SND_ASYNC);
+        }
+    } else {
+        // Fallback to system sounds
+        PlaySoundA("SystemExclamation", NULL, SND_ALIAS | SND_ASYNC);
+        
+        if (GetLastError() != 0) {
+            // Last resort: use Beep
+            Beep(750, 300); // 750 Hz for 300 ms
+        }
     }
 }
 
 // Function to handle calibration complete
 void onCalibrationComplete(const Calibration::CalibrationResults& results) {
-    // Play a different sound when calibration completes
+    // Use system sound when calibration completes instead of the WAV file
     PlaySoundA("SystemAsterisk", NULL, SND_ALIAS | SND_ASYNC);
     
     // Additional actions when calibration completes
@@ -161,7 +188,7 @@ int main() {
     // Initialize audio
     bool audioInitialized = initializeAudio();
     if (!audioInitialized) {
-        std::cerr << "Warning: Audio initialization failed. Continuing without audio." << std::endl;
+        std::cerr << "Warning: Audio WAV file initialization failed. Will use system sounds instead." << std::endl;
     }
     
     // Initialize plotting library

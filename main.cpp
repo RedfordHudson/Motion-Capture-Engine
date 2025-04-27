@@ -93,6 +93,35 @@ void keyboardThread() {
         if (_kbhit()) {
             int key = _getch();
             
+            // Toggle plot visibility with number keys
+            if (key >= '1' && key <= '6') {
+                // Current state
+                bool a_accel = (key == '1');
+                bool g_accel = (key == '2');
+                bool a_vel = (key == '3');
+                bool g_vel = (key == '4');
+                bool a_pos = (key == '5');
+                bool g_pos = (key == '6');
+                
+                // Configure plots
+                Plot::configurePlots(a_accel, g_accel, a_vel, g_vel, a_pos, g_pos);
+                
+                std::cout << "Showing plot: ";
+                if (a_accel) std::cout << "Accelerometer";
+                if (g_accel) std::cout << "Gyroscope";
+                if (a_vel) std::cout << "Accel Velocity";
+                if (g_vel) std::cout << "Gyro Velocity";
+                if (a_pos) std::cout << "Accel Position";
+                if (g_pos) std::cout << "Gyro Position";
+                std::cout << std::endl;
+            }
+            
+            // 'A' to show all plots
+            if (key == 'A' || key == 'a') {
+                Plot::configurePlots(true, true, true, true, true, true);
+                std::cout << "Showing all plots" << std::endl;
+            }
+            
             // 'R' or 'r' for reset
             if (key == 'R' || key == 'r') {
                 resetAndRecalibrate();
@@ -113,6 +142,10 @@ void keyboardThread() {
 void sensorThread(HANDLE hSerial) {
     auto last_update_time = std::chrono::high_resolution_clock::now();
     
+    // Simple gyro integration for testing
+    Hand::Vector3D gyro_velocity = {0, 0, 0};
+    Hand::Vector3D gyro_position = {0, 0, 0};
+    
     while (g_running) {
         try {
             // Read one complete message
@@ -130,11 +163,42 @@ void sensorThread(HANDLE hSerial) {
                 float dt = std::chrono::duration<float>(current_time - last_update_time).count();
                 last_update_time = current_time;
                 
-                // Update the hand tracker with new data (we're not using the results yet)
+                // Update the hand tracker with new data
                 g_tracker.update(result, dt);
                 
-                // Add data point to the plot (just the acceleration values)
-                Plot::addDataPoint(result);
+                // Get accelerometer-derived position and velocity
+                Hand::Vector3D accel_position = g_tracker.getPosition();
+                Hand::Vector3D accel_velocity = g_tracker.getVelocity();
+                
+                // Simple gyro integration for testing
+                float gx = static_cast<float>(result["gx"]) / 100.0f;
+                float gy = static_cast<float>(result["gy"]) / 100.0f;
+                float gz = static_cast<float>(result["gz"]) / 100.0f;
+                
+                // Update gyro velocity with simple integration
+                gyro_velocity.x += gx * dt;
+                gyro_velocity.y += gy * dt;
+                gyro_velocity.z += gz * dt;
+                
+                // Apply damping to gyro velocity
+                float damping = 0.99f;
+                gyro_velocity.x *= damping;
+                gyro_velocity.y *= damping;
+                gyro_velocity.z *= damping;
+                
+                // Update gyro position with simple integration
+                gyro_position.x += gyro_velocity.x * dt;
+                gyro_position.y += gyro_velocity.y * dt;
+                gyro_position.z += gyro_velocity.z * dt;
+                
+                // Add data point to the plot with all types of data
+                Plot::addDataPoint(
+                    result,              // Raw sensor data
+                    accel_velocity,      // Accelerometer-derived velocity
+                    accel_position,      // Accelerometer-derived position
+                    gyro_velocity,       // Gyroscope-derived velocity
+                    gyro_position        // Gyroscope-derived position
+                );
             }
             
             // Add a small delay between readings
@@ -149,10 +213,13 @@ void sensorThread(HANDLE hSerial) {
 
 int main() {
     // Initialize plotting library
-    if (!Plot::initialize("Accelerometer Data Visualization")) {
+    if (!Plot::initialize("Sensor Data Visualization")) {
         std::cerr << "Failed to initialize plotting library" << std::endl;
         return 1;
     }
+    
+    // Configure which plots to show by default
+    Plot::configurePlots(true, false, false, false, false, false);
     
     // Initialize the hand tracker
     g_tracker.reset();
@@ -171,6 +238,19 @@ int main() {
     
     // Start keyboard input thread
     std::thread keyboard_thread(keyboardThread);
+    
+    // Print instructions
+    std::cout << "Keyboard Controls:" << std::endl;
+    std::cout << "1-6: Toggle individual plots" << std::endl;
+    std::cout << "  1 - Accelerometer" << std::endl;
+    std::cout << "  2 - Gyroscope" << std::endl;
+    std::cout << "  3 - Accelerometer Velocity" << std::endl;
+    std::cout << "  4 - Gyroscope Velocity" << std::endl;
+    std::cout << "  5 - Accelerometer Position" << std::endl;
+    std::cout << "  6 - Gyroscope Position" << std::endl;
+    std::cout << "A: Show all plots" << std::endl;
+    std::cout << "R: Recalibrate sensors" << std::endl;
+    std::cout << "ESC: Exit program" << std::endl;
     
     // Main rendering loop
     while (Plot::isWindowOpen() && g_running) {

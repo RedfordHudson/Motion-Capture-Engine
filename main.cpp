@@ -191,8 +191,20 @@ void sensorThread(HANDLE hSerial) {
             // Update the hand tracker with new data
             g_tracker.update(result);
             
-            // Add data point to the plot
-            Plot::addDataPoint(result);
+            // Use calibrated values from the hand tracker instead of raw data
+            std::unordered_map<std::string, int> calibratedData;
+            Hand::Vector3D accel = g_tracker.getAcceleration();
+            Hand::Vector3D gyro = g_tracker.getGyroscope();
+            
+            calibratedData["ax"] = static_cast<int>(accel.x);
+            calibratedData["ay"] = static_cast<int>(accel.y);
+            calibratedData["az"] = static_cast<int>(accel.z);
+            calibratedData["gx"] = static_cast<int>(gyro.x);
+            calibratedData["gy"] = static_cast<int>(gyro.y);
+            calibratedData["gz"] = static_cast<int>(gyro.z);
+            
+            // Add calibrated data point to the plot
+            Plot::addDataPoint(calibratedData);
             
             // Update calibration state if active
             if (g_calibrator.isCalibrating()) {

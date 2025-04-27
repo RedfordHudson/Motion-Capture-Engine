@@ -9,6 +9,9 @@
     <ClInclude Include="C:\Users\Redford\Downloads\synth\Motion-Capture-Engine\libSerial\serial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Redford\Downloads\synth\Motion-Capture-Engine\libPlot\plot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\Redford\Downloads\synth\Motion-Capture-Engine\CMakeLists.txt" />

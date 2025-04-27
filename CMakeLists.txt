@@ -2,8 +2,16 @@ cmake_minimum_required(VERSION 3.10)
 
 project(MotionCaptureEngine)
 
+# C++17 is required for std::filesystem
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add the subdirectories
+add_subdirectory(libSerial)
+add_subdirectory(libPlot)
+
+# Create the main executable
 add_executable(main main.cpp)
 
-add_subdirectory(libSerial)
-
-target_link_libraries(main PRIVATE SerialMonitor)
+# Link against the libraries
+target_link_libraries(main SerialMonitor PlotLib)

@@ -14,8 +14,8 @@ static const char *TAG = "MPU6050";
 // MPU6050 register addresses
 #define MPU6050_ADDR         0x68
 #define MPU6050_PWR_MGMT_1   0x6B
-#define MPU6050_ACCEL_START  0x3B
-#define MPU6050_GYRO_START   0x43
+#define MPU6050_GYRO_START   0x3B  // Gyroscope data comes first
+#define MPU6050_ACCEL_START  0x43  // Accelerometer data comes second
 
 // Function to write a byte to a register
 void writeRegister(uint8_t reg_addr, uint8_t data) {
@@ -81,20 +81,20 @@ void scanI2C() {
 
 // Function to read and output MPU6050 sensor data
 void readMPU6050() {
-  uint8_t data[14]; // 6 accel + 2 temp + 6 gyro
+  uint8_t data[14]; // 6 gyro + 2 temp + 6 accel
   
   // Read all sensor data at once (14 bytes)
-  readRegisters(MPU6050_ACCEL_START, data, 14);
+  readRegisters(MPU6050_GYRO_START, data, 14);
   
-  // Process accelerometer data
-  int16_t ax = combineBytes(data[0], data[1]);
-  int16_t ay = combineBytes(data[2], data[3]);
-  int16_t az = combineBytes(data[4], data[5]);
+  // Process gyroscope data (comes first)
+  int16_t gx = combineBytes(data[0], data[1]);
+  int16_t gy = combineBytes(data[2], data[3]);
+  int16_t gz = combineBytes(data[4], data[5]);
   
-  // Process gyroscope data
-  int16_t gx = combineBytes(data[8], data[9]);
-  int16_t gy = combineBytes(data[10], data[11]);
-  int16_t gz = combineBytes(data[12], data[13]);
+  // Process accelerometer data (comes second)
+  int16_t ax = combineBytes(data[8], data[9]);
+  int16_t ay = combineBytes(data[10], data[11]);
+  int16_t az = combineBytes(data[12], data[13]);
   
   // Print formatted serial packet (JSON format)
   Serial.printf("{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}\n", 

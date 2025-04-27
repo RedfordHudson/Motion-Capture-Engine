@@ -119,7 +119,13 @@ bool readAndProcess(HANDLE hSerial) {
                 std::string completeMsg = msgBuffer.substr(start, end - start + 1);
                 std::unordered_map<std::string, int> result = parseJsonToDict(completeMsg);
 
-                std::cout << "ax: " << result["ax"] << std::endl;
+                // Print all six IMU values
+                std::cout << "ax: " << result["ax"] << ", ";
+                std::cout << "ay: " << result["ay"] << ", ";
+                std::cout << "az: " << result["az"] << ", ";
+                std::cout << "gx: " << result["gx"] << ", ";
+                std::cout << "gy: " << result["gy"] << ", ";
+                std::cout << "gz: " << result["gz"] << std::endl;
 
                 // Erase processed chunk
                 msgBuffer.erase(0, end + 1);

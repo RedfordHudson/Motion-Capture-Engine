@@ -1,0 +1,4 @@
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/CMakeFiles/main.dir
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/libSerial/CMakeFiles/SerialMonitor.dir

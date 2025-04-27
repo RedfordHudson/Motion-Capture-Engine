@@ -1,0 +1,77 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build Only",
+        "type": "shell",
+        "command": "cmake --build build",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": [],
+        // enable logging output
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false,
+          "close": true // DO NOT close powershell after completition
+        },
+        "options": {
+          "shell": {
+            "executable": "cmd.exe",
+            "args": ["/c"]
+          }
+        }
+      },
+      {
+        "label": "Run (Kill Old First)",
+        "type": "shell",
+        "command": "taskkill /IM main.exe /F & ${workspaceFolder}\\build\\Debug\\main.exe",
+        "problemMatcher": [],
+        "group": {
+          "kind": "test",
+          "isDefault": false
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false,
+          "close": false
+        },
+        "options": {
+          "shell": {
+            "executable": "cmd.exe",
+            "args": ["/c"]
+          }
+        }
+      },
+      {
+        "label": "Build and Run",
+        "type": "shell",
+        "command": "cmake --build build & taskkill /IM main.exe /F & ${workspaceFolder}\\build\\Debug\\main.exe",
+        "problemMatcher": [],
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "options": {
+          "shell": {
+            "executable": "cmd.exe",
+            "args": ["/c"]
+          }
+        }
+      }
+    ]
+  }
+  

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/cmake_install.cmake",
+		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/libSerial/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

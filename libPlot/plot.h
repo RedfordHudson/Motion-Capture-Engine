@@ -1,74 +1,52 @@
 #pragma once
 
-#include <string>
 #include <vector>
-#include <mutex>
+#include <string>
 #include <unordered_map>
-#include "../libHand/hand.h"
+#include <mutex>
+
+// Forward declaration
+namespace Hand {
+    struct Vector3D;
+}
 
 namespace Plot {
-    // Maximum number of data points to store in history
-    constexpr size_t MAX_POINTS = 1000;
-
-    // Structure to hold sensor data for plotting
+    // Maximum number of data points to store
+    constexpr int MAX_POINTS = 1000;
+    
+    // Data structure to store sensor data for plotting
     struct SensorData {
         std::vector<float> times;
         
-        // Accelerometer data (linear acceleration)
+        // Accelerometer data
         std::vector<float> ax_data;
         std::vector<float> ay_data;
         std::vector<float> az_data;
         
-        // Gyroscope data (angular acceleration)
+        // Gyroscope data
         std::vector<float> gx_data;
         std::vector<float> gy_data;
         std::vector<float> gz_data;
         
-        // Accelerometer-derived velocity
-        std::vector<float> avx_data;
-        std::vector<float> avy_data;
-        std::vector<float> avz_data;
-        
-        // Gyroscope-derived velocity (angular velocity)
-        std::vector<float> gvx_data;
-        std::vector<float> gvy_data;
-        std::vector<float> gvz_data;
-        
-        // Accelerometer-derived position
-        std::vector<float> apx_data;
-        std::vector<float> apy_data;
-        std::vector<float> apz_data;
-        
-        // Gyroscope-derived position (angular position)
-        std::vector<float> gpx_data;
-        std::vector<float> gpy_data;
-        std::vector<float> gpz_data;
-        
+        // Mutex for thread-safe access
         std::mutex mtx;
     };
-
+    
     // Initialize plotting system
-    bool initialize(const std::string& title);
-
+    bool initialize(const std::string& title = "Sensor Data Visualization");
+    
     // Shutdown plotting system
     void shutdown();
-
-    // Add a data point to the plot
-    void addDataPoint(
-        const std::unordered_map<std::string, int>& sensor_data,
-        const Hand::Vector3D& accel_velocity = {0, 0, 0},
-        const Hand::Vector3D& accel_position = {0, 0, 0},
-        const Hand::Vector3D& gyro_velocity = {0, 0, 0},
-        const Hand::Vector3D& gyro_position = {0, 0, 0}
-    );
-
+    
     // Configure which plots to show
-    void configurePlots(bool show_accel, bool show_gyro, bool show_accel_vel, 
-                       bool show_gyro_vel, bool show_accel_pos, bool show_gyro_pos);
-
-    // Render one frame
+    void configurePlots(bool show_accelerometer, bool show_gyroscope);
+    
+    // Add data point for plotting
+    void addDataPoint(const std::unordered_map<std::string, int>& sensor_data);
+    
+    // Render a new frame (call this in your main loop)
     bool renderFrame();
-
-    // Check if window is still open
+    
+    // Check if the window is still open
     bool isWindowOpen();
 } 

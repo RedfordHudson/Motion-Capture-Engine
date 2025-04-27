@@ -43,3 +43,5 @@ C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/te
 C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/tests/CMakeFiles/triangle-vulkan.dir
 C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/tests/CMakeFiles/windows.dir
 C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/tests/CMakeFiles/INSTALL.dir
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/libHand/CMakeFiles/HandLib.dir
+C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/libHand/CMakeFiles/INSTALL.dir

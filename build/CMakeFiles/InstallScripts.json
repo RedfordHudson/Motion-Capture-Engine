@@ -7,7 +7,8 @@
 		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/cmake_install.cmake",
 		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/src/cmake_install.cmake",
 		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/examples/cmake_install.cmake",
-		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/tests/cmake_install.cmake"
+		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/_deps/glfw-build/tests/cmake_install.cmake",
+		"C:/Users/Redford/Downloads/synth/Motion-Capture-Engine/build/libHand/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

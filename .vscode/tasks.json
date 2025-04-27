@@ -7,7 +7,7 @@
         "command": "cmake --build build",
         "group": {
           "kind": "build",
-          "isDefault": true
+          "isDefault": false
         },
         "problemMatcher": [],
         // enable logging output
@@ -63,7 +63,11 @@
           "focus": false,
           "panel": "shared",
           "showReuseMessage": true,
-          "clear": false
+          "clear": true
+        },
+        "group": {
+          "kind": "build",
+          "isDefault": true
         },
         "options": {
           "shell": {

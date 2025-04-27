@@ -17,14 +17,15 @@ namespace Plot {
     static float g_time = 0.0f;
     static bool g_initialized = false;
     
+    // Plot settings
+    static float g_plot_height = 200.0f;
+    static float g_plot_width = -1.0f; // Full width
+    
     // Colors for each dimension
     static const ImVec4 g_colors[] = {
         ImVec4(1.0f, 0.0f, 0.0f, 1.0f),  // Red - ax
         ImVec4(0.0f, 1.0f, 0.0f, 1.0f),  // Green - ay
         ImVec4(0.0f, 0.0f, 1.0f, 1.0f),  // Blue - az
-        ImVec4(1.0f, 0.5f, 0.0f, 1.0f),  // Orange - gx
-        ImVec4(1.0f, 1.0f, 0.0f, 1.0f),  // Yellow - gy
-        ImVec4(1.0f, 0.0f, 1.0f, 1.0f)   // Purple - gz
     };
 
     // Error callback for GLFW
@@ -46,7 +47,7 @@ namespace Plot {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
         // Create window with graphics context
-        g_window = glfwCreateWindow(800, 600, title.c_str(), NULL, NULL);
+        g_window = glfwCreateWindow(1280, 720, title.c_str(), NULL, NULL);
         if (g_window == NULL)
             return false;
             
@@ -57,7 +58,6 @@ namespace Plot {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImPlot::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
         
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(g_window, true);
@@ -71,9 +71,6 @@ namespace Plot {
         g_sensorData.ax_data.reserve(MAX_POINTS);
         g_sensorData.ay_data.reserve(MAX_POINTS);
         g_sensorData.az_data.reserve(MAX_POINTS);
-        g_sensorData.gx_data.reserve(MAX_POINTS);
-        g_sensorData.gy_data.reserve(MAX_POINTS);
-        g_sensorData.gz_data.reserve(MAX_POINTS);
         
         g_initialized = true;
         return true;
@@ -104,14 +101,11 @@ namespace Plot {
         // Update time
         g_time += 0.01f; // Assume 100Hz sampling rate
         
-        // Add data points
+        // Add data points for acceleration
         g_sensorData.times.push_back(g_time);
         g_sensorData.ax_data.push_back(static_cast<float>(data_point.at("ax")));
         g_sensorData.ay_data.push_back(static_cast<float>(data_point.at("ay")));
         g_sensorData.az_data.push_back(static_cast<float>(data_point.at("az")));
-        g_sensorData.gx_data.push_back(static_cast<float>(data_point.at("gx")));
-        g_sensorData.gy_data.push_back(static_cast<float>(data_point.at("gy")));
-        g_sensorData.gz_data.push_back(static_cast<float>(data_point.at("gz")));
         
         // Limit history size
         if (g_sensorData.times.size() > MAX_POINTS) {
@@ -119,54 +113,54 @@ namespace Plot {
             g_sensorData.ax_data.erase(g_sensorData.ax_data.begin());
             g_sensorData.ay_data.erase(g_sensorData.ay_data.begin());
             g_sensorData.az_data.erase(g_sensorData.az_data.begin());
-            g_sensorData.gx_data.erase(g_sensorData.gx_data.begin());
-            g_sensorData.gy_data.erase(g_sensorData.gy_data.begin());
-            g_sensorData.gz_data.erase(g_sensorData.gz_data.begin());
         }
     }
 
-    void drawPlots() {
+    // Internal function to draw the plots
+    static void drawPlots() {
         if (!g_initialized)
             return;
             
         std::lock_guard<std::mutex> lock(g_sensorData.mtx);
         
-        ImGui::Begin("Motion Sensor Data");
+        // Set window size to maximize space
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
         
-        if (ImPlot::BeginPlot("Accelerometer Data", ImVec2(-1, 300))) {
-            ImPlot::SetupAxes("Time (s)", "Value", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
-            
-            if (!g_sensorData.times.empty()) {
-                ImPlot::SetNextLineStyle(g_colors[0]);
-                ImPlot::PlotLine("ax", g_sensorData.times.data(), g_sensorData.ax_data.data(), 
-                                static_cast<int>(g_sensorData.times.size()));
-                
-                ImPlot::SetNextLineStyle(g_colors[1]);
-                ImPlot::PlotLine("ay", g_sensorData.times.data(), g_sensorData.ay_data.data(), 
-                                static_cast<int>(g_sensorData.times.size()));
-                
-                ImPlot::SetNextLineStyle(g_colors[2]);
-                ImPlot::PlotLine("az", g_sensorData.times.data(), g_sensorData.az_data.data(), 
-                                static_cast<int>(g_sensorData.times.size()));
-            }
-            
-            ImPlot::EndPlot();
+        ImGui::Begin("Accelerometer Data", nullptr, 
+                    ImGuiWindowFlags_NoMove | 
+                    ImGuiWindowFlags_NoResize | 
+                    ImGuiWindowFlags_NoCollapse);
+        
+        // Plot controls
+        ImGui::SliderFloat("Plot Height", &g_plot_height, 100.0f, 400.0f, "%.0f px");
+        
+        // Display current values
+        if (!g_sensorData.times.empty()) {
+            ImGui::Text("Current Time: %.2f", g_time);
+            ImGui::Text("Acceleration: X=%.1f, Y=%.1f, Z=%.1f", 
+                g_sensorData.ax_data.back(),
+                g_sensorData.ay_data.back(),
+                g_sensorData.az_data.back());
         }
         
-        if (ImPlot::BeginPlot("Gyroscope Data", ImVec2(-1, 300))) {
-            ImPlot::SetupAxes("Time (s)", "Value", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+        ImGui::Separator();
+        
+        // Accelerometer data plot
+        if (ImPlot::BeginPlot("Accelerometer Data", ImVec2(g_plot_width, g_plot_height))) {
+            ImPlot::SetupAxes("Time (s)", "Raw Acceleration", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
             
             if (!g_sensorData.times.empty()) {
-                ImPlot::SetNextLineStyle(g_colors[3]);
-                ImPlot::PlotLine("gx", g_sensorData.times.data(), g_sensorData.gx_data.data(), 
+                ImPlot::SetNextLineStyle(g_colors[0], 2.0f);
+                ImPlot::PlotLine("X-axis", g_sensorData.times.data(), g_sensorData.ax_data.data(), 
                                 static_cast<int>(g_sensorData.times.size()));
                 
-                ImPlot::SetNextLineStyle(g_colors[4]);
-                ImPlot::PlotLine("gy", g_sensorData.times.data(), g_sensorData.gy_data.data(), 
+                ImPlot::SetNextLineStyle(g_colors[1], 2.0f);
+                ImPlot::PlotLine("Y-axis", g_sensorData.times.data(), g_sensorData.ay_data.data(), 
                                 static_cast<int>(g_sensorData.times.size()));
                 
-                ImPlot::SetNextLineStyle(g_colors[5]);
-                ImPlot::PlotLine("gz", g_sensorData.times.data(), g_sensorData.gz_data.data(), 
+                ImPlot::SetNextLineStyle(g_colors[2], 2.0f);
+                ImPlot::PlotLine("Z-axis", g_sensorData.times.data(), g_sensorData.az_data.data(), 
                                 static_cast<int>(g_sensorData.times.size()));
             }
             

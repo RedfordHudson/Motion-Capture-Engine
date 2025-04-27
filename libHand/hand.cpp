@@ -32,9 +32,9 @@ void HandTracker::update(const std::unordered_map<std::string, int>& data) {
         raw_ax = applyCalibratedOffset(raw_ax, m_accelOffset.x);
         raw_ay = applyCalibratedOffset(raw_ay, m_accelOffset.y);
         raw_az = applyCalibratedOffset(raw_az, m_accelOffset.z);
-        raw_gx = applyCalibratedOffset(raw_gx, m_gyroOffset.x);
-        raw_gy = applyCalibratedOffset(raw_gy, m_gyroOffset.y);
-        raw_gz = applyCalibratedOffset(raw_gz, m_gyroOffset.z);
+        // raw_gx = applyCalibratedOffset(raw_gx, m_gyroOffset.x);
+        // raw_gy = applyCalibratedOffset(raw_gy, m_gyroOffset.y);
+        // raw_gz = applyCalibratedOffset(raw_gz, m_gyroOffset.z);
     }
     
     // Update data with calibrated values

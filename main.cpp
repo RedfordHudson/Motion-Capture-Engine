@@ -9,6 +9,7 @@
 #include "libHand/hand.h"
 #include "libAudio/Audio.h"
 #include "libCalibrator/calibration.h"
+#include "libUncoupler/uncoupler.h"
 
 // Global flag for termination
 std::atomic<bool> g_running(true);
@@ -18,6 +19,9 @@ Hand::HandTracker g_tracker;
 
 // Global Calibrator
 Calibration::Calibrator g_calibrator;
+
+// Global Uncoupler
+Uncoupler::SensorUncoupler g_uncoupler;
 
 // Path to the calibration sound
 std::string g_calibrationSoundPath;
@@ -85,8 +89,16 @@ void onCalibrationComplete(const Calibration::CalibrationResults& results) {
         static_cast<float>(results.gz_avg)
     );
     
+    // Also set the gyroscope calibration offsets for the uncoupler
+    g_uncoupler.setGyroCalibrationOffsets(
+        static_cast<float>(results.gx_avg),
+        static_cast<float>(results.gy_avg),
+        static_cast<float>(results.gz_avg)
+    );
+    
     // Enable calibration by default after completion
     g_tracker.enableCalibration(true);
+    g_uncoupler.enableGyroCalibration(true);
     
     // Additional actions when calibration completes
     std::cout << "Calibration offsets applied to sensor data" << std::endl;
@@ -135,20 +147,32 @@ void keyboardThread() {
             
             // Toggle plot visibility with number keys
             if (key == '1') {
-                Plot::configurePlots(true, false, false);
+                Plot::configurePlots(true, false, false, false, false);
                 std::cout << "Showing accelerometer plot only" << std::endl;
             }
             else if (key == '2') {
-                Plot::configurePlots(false, true, false);
+                Plot::configurePlots(false, true, false, false, false);
                 std::cout << "Showing gyroscope plot only" << std::endl;
             }
             else if (key == '3') {
-                Plot::configurePlots(true, true, false);
+                Plot::configurePlots(true, true, false, false, false);
                 std::cout << "Showing accelerometer and gyroscope plots" << std::endl;
             }
             else if (key == '4') {
-                Plot::configurePlots(true, true, true);
-                std::cout << "Showing all plots (accelerometer, gyroscope, and velocity)" << std::endl;
+                Plot::configurePlots(true, true, true, false, false);
+                std::cout << "Showing accelerometer, gyroscope, and velocity plots" << std::endl;
+            }
+            else if (key == '5') {
+                Plot::configurePlots(false, false, false, true, false);
+                std::cout << "Showing gravity vector plot" << std::endl;
+            }
+            else if (key == '6') {
+                Plot::configurePlots(false, false, false, false, true);
+                std::cout << "Showing linear acceleration plot" << std::endl;
+            }
+            else if (key == '7') {
+                Plot::configurePlots(true, true, true, true, true);
+                std::cout << "Showing all plots" << std::endl;
             }
             // Start calibration with 'C' key
             else if (key == 'c' || key == 'C') {
@@ -159,11 +183,13 @@ void keyboardThread() {
             else if (key == 't' || key == 'T') {
                 bool newState = !g_tracker.isCalibrationEnabled();
                 g_tracker.enableCalibration(newState);
+                g_uncoupler.enableGyroCalibration(newState);
                 std::cout << "Calibration " << (newState ? "enabled" : "disabled") << std::endl;
             }
             // Reset calibration with 'R' key
             else if (key == 'r' || key == 'R') {
                 g_tracker.setCalibrationOffsets(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                g_uncoupler.setGyroCalibrationOffsets(0.0f, 0.0f, 0.0f);
                 std::cout << "Calibration reset to zero" << std::endl;
             }
             
@@ -188,23 +214,22 @@ void sensorThread(HANDLE hSerial) {
             // Print all six IMU values (now commented out)
             stringifyMap(result);
             
-            // Update the hand tracker with new data
+            // Process raw data through the uncoupler to get gravity vector estimation
+            Uncoupler::UncoupledData uncoupledData = g_uncoupler.processData(result);
+            
+            // Update the hand tracker with raw data
             g_tracker.update(result);
             
-            // Use calibrated values from the hand tracker instead of raw data
-            std::unordered_map<std::string, int> calibratedData;
-            Hand::Vector3D accel = g_tracker.getAcceleration();
-            Hand::Vector3D gyro = g_tracker.getGyroscope();
-            
-            calibratedData["ax"] = static_cast<int>(accel.x);
-            calibratedData["ay"] = static_cast<int>(accel.y);
-            calibratedData["az"] = static_cast<int>(accel.z);
-            calibratedData["gx"] = static_cast<int>(gyro.x);
-            calibratedData["gy"] = static_cast<int>(gyro.y);
-            calibratedData["gz"] = static_cast<int>(gyro.z);
-            
-            // Add calibrated data point to the plot
-            Plot::addDataPoint(calibratedData);
+            // Add data to plot with gravity and linear acceleration information
+            Plot::addDataPointWithGravity(
+                result,
+                uncoupledData.grav_x,
+                uncoupledData.grav_y, 
+                uncoupledData.grav_z,
+                uncoupledData.ax_linear,
+                uncoupledData.ay_linear,
+                uncoupledData.az_linear
+            );
             
             // Update calibration state if active
             if (g_calibrator.isCalibrating()) {
@@ -231,13 +256,13 @@ int main() {
     }
     
     // Initialize plotting library
-    if (!Plot::initialize("Raw Sensor Data Visualization")) {
+    if (!Plot::initialize("Motion Capture Data Visualization")) {
         std::cerr << "Failed to initialize plotting library" << std::endl;
         return 1;
     }
     
     // Configure which plots to show by default
-    Plot::configurePlots(true, true);
+    Plot::configurePlots(true, true, false, true, false);
     
     // Connect to the serial port
     std::string portName = "\\\\.\\COM3"; // Adjust as needed (e.g. COM4)
@@ -247,7 +272,7 @@ int main() {
         Plot::shutdown();
         return 1;
     }
-
+    
     // Start sensor reading thread
     std::thread sensor_thread(sensorThread, hSerial);
     
@@ -259,7 +284,10 @@ int main() {
     std::cout << "1: Show accelerometer plot only" << std::endl;
     std::cout << "2: Show gyroscope plot only" << std::endl;
     std::cout << "3: Show accelerometer and gyroscope plots" << std::endl;
-    std::cout << "4: Show all plots (accelerometer, gyroscope, and velocity)" << std::endl;
+    std::cout << "4: Show accelerometer, gyroscope, and velocity plots" << std::endl;
+    std::cout << "5: Show gravity vector plot" << std::endl;
+    std::cout << "6: Show linear acceleration plot" << std::endl;
+    std::cout << "7: Show all plots" << std::endl;
     std::cout << "C: Start calibration" << std::endl;
     std::cout << "T: Toggle calibration on/off" << std::endl;
     std::cout << "R: Reset calibration" << std::endl;
@@ -284,7 +312,7 @@ int main() {
     }
     
     // Clean up
-    ::CloseHandle(hSerial);
+    CloseHandle(hSerial);
     Plot::shutdown();
     
     return 0;

@@ -12,12 +12,13 @@ add_subdirectory(libPlot)
 add_subdirectory(libHand)
 add_subdirectory(libAudio)
 add_subdirectory(libCalibrator)
+add_subdirectory(libUncoupler)
 
 # Create the main executable
 add_executable(main main.cpp)
 
 # Link against the libraries
-target_link_libraries(main SerialMonitor PlotLib HandLib AudioLib CalibrationLib)
+target_link_libraries(main SerialMonitor PlotLib HandLib AudioLib CalibrationLib Uncoupler)
 
 # Copy assets to build directory (with specific mention of WAV files)
 file(GLOB ASSET_FILES 

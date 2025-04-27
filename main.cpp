@@ -72,11 +72,27 @@ void playCalibrationSound() {
 
 // Function to handle calibration complete
 void onCalibrationComplete(const Calibration::CalibrationResults& results) {
-    // Use system sound when calibration completes instead of the WAV file
+    // Use system sound when calibration completes
     PlaySoundA("SystemAsterisk", NULL, SND_ALIAS | SND_ASYNC);
     
+    // Apply calibration offsets to the hand tracker
+    g_tracker.setCalibrationOffsets(
+        static_cast<float>(results.ax_avg),
+        static_cast<float>(results.ay_avg),
+        static_cast<float>(results.az_avg),
+        static_cast<float>(results.gx_avg),
+        static_cast<float>(results.gy_avg),
+        static_cast<float>(results.gz_avg)
+    );
+    
+    // Enable calibration by default after completion
+    g_tracker.enableCalibration(true);
+    
     // Additional actions when calibration completes
-    std::cout << "Calibration offsets can be applied to sensor data" << std::endl;
+    std::cout << "Calibration offsets applied to sensor data" << std::endl;
+    std::cout << "Calibration values:" << std::endl;
+    std::cout << "  Accel: X=" << results.ax_avg << ", Y=" << results.ay_avg << ", Z=" << results.az_avg << std::endl;
+    std::cout << "  Gyro: X=" << results.gx_avg << ", Y=" << results.gy_avg << ", Z=" << results.gz_avg << std::endl;
 }
 
 // Initialize and connect to the serial port
@@ -138,6 +154,17 @@ void keyboardThread() {
             else if (key == 'c' || key == 'C') {
                 playCalibrationSound();
                 g_calibrator.startCalibration(5, nullptr, onCalibrationComplete);
+            }
+            // Toggle calibration with 'T' key
+            else if (key == 't' || key == 'T') {
+                bool newState = !g_tracker.isCalibrationEnabled();
+                g_tracker.enableCalibration(newState);
+                std::cout << "Calibration " << (newState ? "enabled" : "disabled") << std::endl;
+            }
+            // Reset calibration with 'R' key
+            else if (key == 'r' || key == 'R') {
+                g_tracker.setCalibrationOffsets(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                std::cout << "Calibration reset to zero" << std::endl;
             }
             
             // ESC key to exit
@@ -222,6 +249,8 @@ int main() {
     std::cout << "3: Show accelerometer and gyroscope plots" << std::endl;
     std::cout << "4: Show all plots (accelerometer, gyroscope, and velocity)" << std::endl;
     std::cout << "C: Start calibration" << std::endl;
+    std::cout << "T: Toggle calibration on/off" << std::endl;
+    std::cout << "R: Reset calibration" << std::endl;
     std::cout << "ESC: Exit" << std::endl;
     
     // Main rendering loop

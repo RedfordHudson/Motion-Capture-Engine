@@ -36,6 +36,19 @@ namespace Hand {
         // Get calculated velocity
         Vector3D getVelocity() const;
         
+        // Set calibration offsets
+        void setCalibrationOffsets(float ax_offset, float ay_offset, float az_offset,
+                                  float gx_offset, float gy_offset, float gz_offset);
+        
+        // Apply calibration to value
+        int applyCalibratedOffset(int value, float offset) const;
+        
+        // Enable/disable calibration
+        void enableCalibration(bool enable);
+        
+        // Check if calibration is enabled
+        bool isCalibrationEnabled() const;
+        
     private:
         // Update velocity based on acceleration data
         void updateVelocity(const Vector3D& prevAccel, const std::chrono::steady_clock::time_point& currentTime);
@@ -50,5 +63,12 @@ namespace Hand {
         // Timestamp for velocity calculation
         std::chrono::steady_clock::time_point m_lastUpdateTime;
         bool m_firstUpdate;
+        
+        // Calibration offsets
+        Vector3D m_accelOffset;
+        Vector3D m_gyroOffset;
+        
+        // Calibration state
+        bool m_calibrationEnabled;
     };
 } 

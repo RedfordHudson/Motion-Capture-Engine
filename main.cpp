@@ -3,10 +3,12 @@
 #include <chrono>
 #include <atomic>
 #include <conio.h> // For _kbhit() and _getch()
+#include <filesystem>
 #include "libSerial/serial.h"
 #include "libPlot/plot.h"
 #include "libHand/hand.h"
 #include "libAudio/Audio.h"
+#include "libCalibrator/calibration.h"
 
 // Global flag for termination
 std::atomic<bool> g_running(true);
@@ -14,21 +16,40 @@ std::atomic<bool> g_running(true);
 // Global HandTracker
 Hand::HandTracker g_tracker;
 
-// Function to play audio in a separate thread
-void playAudioThread() {
-    // Open the audio file
-    Audio::openAudioFile("assets/calibrating.mp3", "startup_sound");
+// Global Calibrator
+Calibration::Calibrator g_calibrator;
+
+// Path to the calibration sound
+std::string g_calibrationSoundPath;
+
+// Function to initialize audio
+bool initializeAudio() {
+    // Try to use system sounds first - will always succeed
+    g_calibrationSoundPath = "SystemDefault";
+    std::cout << "Using system sounds for audio feedback" << std::endl;
+    return true;
+}
+
+// Function to play the calibration sound
+void playCalibrationSound() {
+    // Use Windows system sounds instead of files
+    // SND_ALIAS uses predefined system sounds
+    BOOL result = PlaySoundA("SystemExclamation", NULL, SND_ALIAS | SND_ASYNC);
     
-    // Start playing the sound
-    Audio::startPlayback("startup_sound");
-    
-    // Clean up after playback completes
-    while (g_running) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (!result) {
+        // Fallback to simple beep if system sound failed
+        std::cerr << "Falling back to system beep" << std::endl;
+        Beep(750, 300); // 750 Hz for 300 ms
     }
+}
+
+// Function to handle calibration complete
+void onCalibrationComplete(const Calibration::CalibrationResults& results) {
+    // Play a different sound when calibration completes
+    PlaySoundA("SystemAsterisk", NULL, SND_ALIAS | SND_ASYNC);
     
-    // Close audio file when application exits
-    Audio::closeAudioFile("startup_sound");
+    // Additional actions when calibration completes
+    std::cout << "Calibration offsets can be applied to sensor data" << std::endl;
 }
 
 // Initialize and connect to the serial port
@@ -46,6 +67,8 @@ HANDLE initializeSerialPort(const std::string& portName) {
 
 // Display the IMU values
 void stringifyMap(std::unordered_map<std::string, int>& result) {
+    // Comment out the sensor data logging as requested
+    /*
     std::cout << "ax: " << result["ax"] << ", ";
     std::cout << "ay: " << result["ay"] << ", ";
     std::cout << "az: " << result["az"] << ", ";
@@ -58,6 +81,7 @@ void stringifyMap(std::unordered_map<std::string, int>& result) {
     std::cout << "vx: " << velocity.x << ", ";
     std::cout << "vy: " << velocity.y << ", ";
     std::cout << "vz: " << velocity.z << std::endl;
+    */
 }
 
 // Thread function to check for keyboard input
@@ -83,6 +107,11 @@ void keyboardThread() {
                 Plot::configurePlots(true, true, true);
                 std::cout << "Showing all plots (accelerometer, gyroscope, and velocity)" << std::endl;
             }
+            // Start calibration with 'C' key
+            else if (key == 'c' || key == 'C') {
+                playCalibrationSound();
+                g_calibrator.startCalibration(5, nullptr, onCalibrationComplete);
+            }
             
             // ESC key to exit
             if (key == 27) {
@@ -102,7 +131,7 @@ void sensorThread(HANDLE hSerial) {
             // Read one complete message using the global function (not in Serial namespace)
             std::unordered_map<std::string, int> result = ::readAndProcess(hSerial);
             
-            // Print all six IMU values
+            // Print all six IMU values (now commented out)
             stringifyMap(result);
             
             // Update the hand tracker with new data
@@ -110,6 +139,13 @@ void sensorThread(HANDLE hSerial) {
             
             // Add data point to the plot
             Plot::addDataPoint(result);
+            
+            // Update calibration state if active
+            if (g_calibrator.isCalibrating()) {
+                g_calibrator.update(&result);
+            } else {
+                g_calibrator.update(nullptr);
+            }
             
             // Add a small delay between readings
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -122,16 +158,15 @@ void sensorThread(HANDLE hSerial) {
 }
 
 int main() {
-    // Start the audio playback in a separate thread
-    std::thread audio_thread(playAudioThread);
+    // Initialize audio
+    bool audioInitialized = initializeAudio();
+    if (!audioInitialized) {
+        std::cerr << "Warning: Audio initialization failed. Continuing without audio." << std::endl;
+    }
     
     // Initialize plotting library
     if (!Plot::initialize("Raw Sensor Data Visualization")) {
         std::cerr << "Failed to initialize plotting library" << std::endl;
-        g_running = false;
-        if (audio_thread.joinable()) {
-            audio_thread.join();
-        }
         return 1;
     }
     
@@ -144,10 +179,6 @@ int main() {
     
     if (hSerial == INVALID_HANDLE_VALUE) {
         Plot::shutdown();
-        g_running = false;
-        if (audio_thread.joinable()) {
-            audio_thread.join();
-        }
         return 1;
     }
 
@@ -163,6 +194,7 @@ int main() {
     std::cout << "2: Show gyroscope plot only" << std::endl;
     std::cout << "3: Show accelerometer and gyroscope plots" << std::endl;
     std::cout << "4: Show all plots (accelerometer, gyroscope, and velocity)" << std::endl;
+    std::cout << "C: Start calibration" << std::endl;
     std::cout << "ESC: Exit" << std::endl;
     
     // Main rendering loop
@@ -182,11 +214,8 @@ int main() {
     if (keyboard_thread.joinable()) {
         keyboard_thread.join();
     }
-    if (audio_thread.joinable()) {
-        audio_thread.join();
-    }
     
-    // Clean up - CloseHandle is a Windows API function
+    // Clean up
     ::CloseHandle(hSerial);
     Plot::shutdown();
     

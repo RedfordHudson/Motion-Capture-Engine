@@ -37,6 +37,15 @@ namespace Audio {
      * @param alias Alias of the audio file
      */
     void closeAudioFile(const std::string& alias);
+
+    /**
+     * Simple function to play a sound file using Windows API directly
+     * This is more reliable than the MCI interface on some systems
+     * @param filePath Path to the sound file
+     * @param async True to play asynchronously, false to block until sound completes
+     * @return True if successful, false otherwise
+     */
+    bool playSoundSimple(const std::string& filePath, bool async = true);
 }
 
 #endif // AUDIO_H 

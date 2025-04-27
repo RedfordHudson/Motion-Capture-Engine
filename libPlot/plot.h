@@ -8,6 +8,7 @@
 // Forward declaration
 namespace Hand {
     struct Vector3D;
+    class HandTracker;
 }
 
 namespace Plot {
@@ -28,6 +29,11 @@ namespace Plot {
         std::vector<float> gy_data;
         std::vector<float> gz_data;
         
+        // Velocity data
+        std::vector<float> vx_data;
+        std::vector<float> vy_data;
+        std::vector<float> vz_data;
+        
         // Mutex for thread-safe access
         std::mutex mtx;
     };
@@ -39,7 +45,7 @@ namespace Plot {
     void shutdown();
     
     // Configure which plots to show
-    void configurePlots(bool show_accelerometer, bool show_gyroscope);
+    void configurePlots(bool show_accelerometer, bool show_gyroscope, bool show_velocity = false);
     
     // Add data point for plotting
     void addDataPoint(const std::unordered_map<std::string, int>& sensor_data);

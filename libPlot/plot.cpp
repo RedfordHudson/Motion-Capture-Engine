@@ -1,4 +1,5 @@
 #include "plot.h"
+#include "../libHand/hand.h"
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -6,6 +7,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <algorithm>
+
+// Forward declaration for the global tracker from main.cpp
+extern Hand::HandTracker g_tracker;
 
 namespace Plot {
     // Global variables
@@ -19,6 +23,7 @@ namespace Plot {
     // Plot visibility flags
     static bool show_accel = true;
     static bool show_gyro = false;
+    static bool show_velocity = false;
     
     // Axis limits
     static float g_x_min = 0.0f;
@@ -27,14 +32,19 @@ namespace Plot {
     static float g_accel_y_max = 32767.0f;
     static float g_gyro_y_min = -32768.0f;
     static float g_gyro_y_max = 32767.0f;
+    static float g_velocity_y_min = -1000.0f;
+    static float g_velocity_y_max = 1000.0f;
     
     // Auto-fit data range
     static float g_accel_data_min = 0.0f;
     static float g_accel_data_max = 0.0f;
     static float g_gyro_data_min = 0.0f;
     static float g_gyro_data_max = 0.0f;
+    static float g_velocity_data_min = 0.0f;
+    static float g_velocity_data_max = 0.0f;
     static bool g_accel_auto_fit = true;
     static bool g_gyro_auto_fit = true;
+    static bool g_velocity_auto_fit = true;
 
     bool initialize(const std::string& title) {
         // Initialize GLFW
@@ -78,6 +88,9 @@ namespace Plot {
         g_sensor_data.gx_data.reserve(MAX_POINTS);
         g_sensor_data.gy_data.reserve(MAX_POINTS);
         g_sensor_data.gz_data.reserve(MAX_POINTS);
+        g_sensor_data.vx_data.reserve(MAX_POINTS);
+        g_sensor_data.vy_data.reserve(MAX_POINTS);
+        g_sensor_data.vz_data.reserve(MAX_POINTS);
 
         g_initialized = true;
         return true;
@@ -97,9 +110,10 @@ namespace Plot {
         g_initialized = false;
     }
 
-    void configurePlots(bool show_accelerometer, bool show_gyroscope) {
+    void configurePlots(bool show_accelerometer, bool show_gyroscope, bool show_velocity_plot) {
         show_accel = show_accelerometer;
         show_gyro = show_gyroscope;
+        show_velocity = show_velocity_plot;
     }
 
     void addDataPoint(const std::unordered_map<std::string, int>& sensor_data) {
@@ -129,6 +143,12 @@ namespace Plot {
         g_sensor_data.gy_data.push_back(static_cast<float>(sensor_data.count("gy") ? sensor_data.at("gy") : 0));
         g_sensor_data.gz_data.push_back(static_cast<float>(sensor_data.count("gz") ? sensor_data.at("gz") : 0));
         
+        // Get velocity data from the main application's tracker
+        Hand::Vector3D velocity = g_tracker.getVelocity();
+        g_sensor_data.vx_data.push_back(velocity.x);
+        g_sensor_data.vy_data.push_back(velocity.y);
+        g_sensor_data.vz_data.push_back(velocity.z);
+        
         // Limit the number of data points
         if (g_sensor_data.times.size() > MAX_POINTS) {
             g_sensor_data.times.erase(g_sensor_data.times.begin());
@@ -138,6 +158,9 @@ namespace Plot {
             g_sensor_data.gx_data.erase(g_sensor_data.gx_data.begin());
             g_sensor_data.gy_data.erase(g_sensor_data.gy_data.begin());
             g_sensor_data.gz_data.erase(g_sensor_data.gz_data.begin());
+            g_sensor_data.vx_data.erase(g_sensor_data.vx_data.begin());
+            g_sensor_data.vy_data.erase(g_sensor_data.vy_data.begin());
+            g_sensor_data.vz_data.erase(g_sensor_data.vz_data.begin());
         }
         
         // Update data range for auto-fitting
@@ -173,6 +196,22 @@ namespace Plot {
             
             g_gyro_data_min = gyro_min;
             g_gyro_data_max = gyro_max;
+            
+            // Update velocity data range
+            float velocity_min = std::min({
+                *std::min_element(g_sensor_data.vx_data.begin(), g_sensor_data.vx_data.end()),
+                *std::min_element(g_sensor_data.vy_data.begin(), g_sensor_data.vy_data.end()),
+                *std::min_element(g_sensor_data.vz_data.begin(), g_sensor_data.vz_data.end())
+            });
+            
+            float velocity_max = std::max({
+                *std::max_element(g_sensor_data.vx_data.begin(), g_sensor_data.vx_data.end()),
+                *std::max_element(g_sensor_data.vy_data.begin(), g_sensor_data.vy_data.end()),
+                *std::max_element(g_sensor_data.vz_data.begin(), g_sensor_data.vz_data.end())
+            });
+            
+            g_velocity_data_min = velocity_min;
+            g_velocity_data_max = velocity_max;
         }
     }
 
@@ -186,6 +225,7 @@ namespace Plot {
         int enabled_plots = 0;
         if (show_accel) enabled_plots++;
         if (show_gyro) enabled_plots++;
+        if (show_velocity) enabled_plots++;
         
         // If no plots are enabled, don't draw anything
         if (enabled_plots == 0) return;
@@ -216,6 +256,14 @@ namespace Plot {
             float padding = range * 0.1f + 1.0f;
             g_gyro_y_min = g_gyro_data_min - padding;
             g_gyro_y_max = g_gyro_data_max + padding;
+        }
+        
+        if (g_velocity_auto_fit) {
+            // Improved padding calculation for auto-fit to handle larger ranges
+            float range = g_velocity_data_max - g_velocity_data_min;
+            float padding = range * 0.1f + 1.0f;
+            g_velocity_y_min = g_velocity_data_min - padding;
+            g_velocity_y_max = g_velocity_data_max + padding;
         }
         
         // Draw accelerometer plot
@@ -263,6 +311,29 @@ namespace Plot {
                 ImPlot::EndPlot();
             }
         }
+        
+        // Draw velocity plot
+        if (show_velocity) {
+            if (ImPlot::BeginPlot("Velocity", ImVec2(window_width, g_plot_height), ImPlotFlags_NoTitle)) {
+                ImPlot::SetupAxis(ImAxis_X1, "Time (s)", ImPlotAxisFlags_AutoFit);
+                ImPlot::SetupAxis(ImAxis_Y1, "Linear Velocity", ImPlotAxisFlags_None);
+                ImPlot::SetupAxisLimits(ImAxis_X1, g_x_min, g_x_max, ImGuiCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, g_velocity_y_min, g_velocity_y_max, ImGuiCond_Always);
+                
+                std::lock_guard<std::mutex> lock(g_sensor_data.mtx);
+                if (!g_sensor_data.times.empty()) {
+                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), 2.0f);
+                    ImPlot::PlotLine("X", g_sensor_data.times.data(), g_sensor_data.vx_data.data(), g_sensor_data.times.size());
+                    
+                    ImPlot::SetNextLineStyle(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), 2.0f);
+                    ImPlot::PlotLine("Y", g_sensor_data.times.data(), g_sensor_data.vy_data.data(), g_sensor_data.times.size());
+                    
+                    ImPlot::SetNextLineStyle(ImVec4(0.2f, 0.2f, 1.0f, 1.0f), 2.0f);
+                    ImPlot::PlotLine("Z", g_sensor_data.times.data(), g_sensor_data.vz_data.data(), g_sensor_data.times.size());
+                }
+                ImPlot::EndPlot();
+            }
+        }
     }
 
     void drawControls() {
@@ -275,6 +346,7 @@ namespace Plot {
             ImGui::Text("Plot Visibility:");
             ImGui::Checkbox("Accelerometer", &show_accel);
             ImGui::Checkbox("Gyroscope", &show_gyro);
+            ImGui::Checkbox("Velocity", &show_velocity);
             
             ImGui::Separator();
             
@@ -292,6 +364,15 @@ namespace Plot {
                 if (!g_gyro_auto_fit) {
                     ImGui::SliderFloat("Y Min", &g_gyro_y_min, -32768.0f, 0.0f);
                     ImGui::SliderFloat("Y Max", &g_gyro_y_max, 0.0f, 32767.0f);
+                }
+                ImGui::TreePop();
+            }
+            
+            if (ImGui::TreeNode("Velocity Y-Axis Settings")) {
+                ImGui::Checkbox("Auto-fit Y-Axis", &g_velocity_auto_fit);
+                if (!g_velocity_auto_fit) {
+                    ImGui::SliderFloat("Y Min", &g_velocity_y_min, -1000.0f, 0.0f);
+                    ImGui::SliderFloat("Y Max", &g_velocity_y_max, 0.0f, 1000.0f);
                 }
                 ImGui::TreePop();
             }

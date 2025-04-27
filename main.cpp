@@ -33,7 +33,13 @@ void stringifyMap(std::unordered_map<std::string, int>& result) {
     std::cout << "az: " << result["az"] << ", ";
     std::cout << "gx: " << result["gx"] << ", ";
     std::cout << "gy: " << result["gy"] << ", ";
-    std::cout << "gz: " << result["gz"] << std::endl;
+    std::cout << "gz: " << result["gz"] << ", ";
+    
+    // Display calculated velocity
+    Hand::Vector3D velocity = g_tracker.getVelocity();
+    std::cout << "vx: " << velocity.x << ", ";
+    std::cout << "vy: " << velocity.y << ", ";
+    std::cout << "vz: " << velocity.z << std::endl;
 }
 
 // Thread function to check for keyboard input
@@ -44,16 +50,20 @@ void keyboardThread() {
             
             // Toggle plot visibility with number keys
             if (key == '1') {
-                Plot::configurePlots(true, false);
+                Plot::configurePlots(true, false, false);
                 std::cout << "Showing accelerometer plot only" << std::endl;
             }
             else if (key == '2') {
-                Plot::configurePlots(false, true);
+                Plot::configurePlots(false, true, false);
                 std::cout << "Showing gyroscope plot only" << std::endl;
             }
             else if (key == '3') {
-                Plot::configurePlots(true, true);
-                std::cout << "Showing both plots" << std::endl;
+                Plot::configurePlots(true, true, false);
+                std::cout << "Showing accelerometer and gyroscope plots" << std::endl;
+            }
+            else if (key == '4') {
+                Plot::configurePlots(true, true, true);
+                std::cout << "Showing all plots (accelerometer, gyroscope, and velocity)" << std::endl;
             }
             
             // ESC key to exit
@@ -122,7 +132,8 @@ int main() {
     std::cout << "Keyboard Controls:" << std::endl;
     std::cout << "1: Show accelerometer plot only" << std::endl;
     std::cout << "2: Show gyroscope plot only" << std::endl;
-    std::cout << "3: Show both plots" << std::endl;
+    std::cout << "3: Show accelerometer and gyroscope plots" << std::endl;
+    std::cout << "4: Show all plots (accelerometer, gyroscope, and velocity)" << std::endl;
     std::cout << "ESC: Exit" << std::endl;
     
     // Main rendering loop

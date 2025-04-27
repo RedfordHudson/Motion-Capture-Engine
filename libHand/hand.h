@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <chrono>
 
 namespace Hand {
     // Simple 3D vector structure
@@ -32,9 +33,19 @@ namespace Hand {
         // Get raw gyroscope
         Vector3D getGyroscope() const;
         
+        // Get calculated velocity
+        Vector3D getVelocity() const;
+        
     private:
         // Raw sensor data
         Vector3D m_accel;
         Vector3D m_gyro;
+        
+        // Calculated velocity
+        Vector3D m_velocity;
+        
+        // Timestamp for velocity calculation
+        std::chrono::steady_clock::time_point m_lastUpdateTime;
+        bool m_firstUpdate;
     };
 } 

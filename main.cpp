@@ -6,12 +6,30 @@
 #include "libSerial/serial.h"
 #include "libPlot/plot.h"
 #include "libHand/hand.h"
+#include "libAudio/Audio.h"
 
 // Global flag for termination
 std::atomic<bool> g_running(true);
 
 // Global HandTracker
 Hand::HandTracker g_tracker;
+
+// Function to play audio in a separate thread
+void playAudioThread() {
+    // Open the audio file
+    Audio::openAudioFile("assets/calibrating.mp3", "startup_sound");
+    
+    // Start playing the sound
+    Audio::startPlayback("startup_sound");
+    
+    // Clean up after playback completes
+    while (g_running) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    
+    // Close audio file when application exits
+    Audio::closeAudioFile("startup_sound");
+}
 
 // Initialize and connect to the serial port
 HANDLE initializeSerialPort(const std::string& portName) {
@@ -104,9 +122,16 @@ void sensorThread(HANDLE hSerial) {
 }
 
 int main() {
+    // Start the audio playback in a separate thread
+    std::thread audio_thread(playAudioThread);
+    
     // Initialize plotting library
     if (!Plot::initialize("Raw Sensor Data Visualization")) {
         std::cerr << "Failed to initialize plotting library" << std::endl;
+        g_running = false;
+        if (audio_thread.joinable()) {
+            audio_thread.join();
+        }
         return 1;
     }
     
@@ -119,6 +144,10 @@ int main() {
     
     if (hSerial == INVALID_HANDLE_VALUE) {
         Plot::shutdown();
+        g_running = false;
+        if (audio_thread.joinable()) {
+            audio_thread.join();
+        }
         return 1;
     }
 
@@ -152,6 +181,9 @@ int main() {
     }
     if (keyboard_thread.joinable()) {
         keyboard_thread.join();
+    }
+    if (audio_thread.joinable()) {
+        audio_thread.join();
     }
     
     // Clean up - CloseHandle is a Windows API function

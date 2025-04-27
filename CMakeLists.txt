@@ -10,9 +10,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(libSerial)
 add_subdirectory(libPlot)
 add_subdirectory(libHand)
+add_subdirectory(libAudio)
+add_subdirectory(libCalibrator)
 
 # Create the main executable
 add_executable(main main.cpp)
 
 # Link against the libraries
-target_link_libraries(main SerialMonitor PlotLib HandLib)
+target_link_libraries(main SerialMonitor PlotLib HandLib AudioLib)
+
+# Copy assets to build directory
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
